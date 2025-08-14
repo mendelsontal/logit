@@ -32,11 +32,11 @@ UPDATE_LOGIT(){
         if [[ $(echo -e "$LATEST_VERSION\n$PRESENT_VERSION" | sort -V | head -n1) == "$PRESENT_VERSION" ]]; then
             if [[ "$LATEST_VERSION" != "$PRESENT_VERSION" ]]; then
                 # Update Available
-                printf "A newer version is available.\n"
+                printf "\nA newer version is available.\n"
                 logit INFO "A newer version is available. Current: $PRESENT_VERSION Latest: $LATEST_VERSION"
                 # Choices
-                printf "1) Update. \n"
-                printf "2) Cancel. \n\n"
+                printf "1) Update \n"
+                printf "2) Cancel \n\n"
 
                 # User choice input
                 read -p "$(echo -e "${BOLD_TEXT}Please enter your choice ${BLUE_TEXT}[1/2]${RESET_TEXT}: ")" update_choices
@@ -44,9 +44,21 @@ UPDATE_LOGIT(){
                 case $update_choice in
                     1|update|yes|y)
                         logit INFO "Attempting to download newer version"
-                        
-                        curl -L "$RELEASED_VER" -o "$(dirname "$SCRIPT_DIR")/update.zip"
-                        unzip -o update.zip
+                        # Download latest zip release
+                        curl -Ls --fail "$RELEASED_VER" -o "$(dirname "$SCRIPT_DIR")/update.zip"
+                        if [[ $? -eq 0 ]]; then
+                            logit SUCCESS "Newer version downloaded successfully: $(dirname "$SCRIPT_DIR")/update.zip"
+                        # Zip actions & cleanup
+                            unzip -o update.zip &&  \
+                            mv logit-*/logit.sh . && \
+                            mv logit-*/assets/* ./assets/ && \
+                            rm -r logit-* && \
+                            rm update.zip
+                        else
+                            echo $RESPONSE
+                            logit ERROR "Failed to download"
+                        fi
+
                         chmod +x "$PRESENT_SCRIPT"
                         PRESENT_VERSION=$(grep -oP '^LOGIT_VERSION="\K[0-9.]+' "$PRESENT_SCRIPT")
 
