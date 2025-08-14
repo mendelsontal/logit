@@ -4,10 +4,12 @@
 # ============================
 UPDATE_LOGIT(){
     # URL where the latest version is stored
-    VERSION_URL="https://raw.githubusercontent.com/mendelsontal/logit/logit.sh"
+    VERSION_URL="https://raw.githubusercontent.com/mendelsontal/logit/refs/heads/main/logit.sh"
+    
 
     # Fetch the latest version from the URL
     LATEST_VERSION=$(curl -s "$VERSION_URL" | grep -oP '^LOGIT_VERSION="\K[0-9.]+')
+    RELEASED_VER="https://github.com/mendelsontal/logit/archive/refs/tags/v$LATEST_VERSION.zip"
 
      if [ -z "$LATEST_VERSION" ]; then
         printf "\n${BOLD_TEXT}${RED_TEXT}ERROR - Could not determine the latest version from:${RESET_TEXT}\n${VERSION_URL}\n\n"
@@ -15,109 +17,61 @@ UPDATE_LOGIT(){
     fi
 
     # Debugging: Show fetched version
-    printf "\nLatest Logit Version: $LATEST_VERSION\n"
+    printf "\nLatest  Logit Version: $LATEST_VERSION\n"
 
     # Define paths properly
     LOCAL_FILE="$HOME/bin/logit/logit.sh"
     GLOBAL_FILE="/usr/local/bin/logit/logit.sh"
     SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
-    PRESENT_FOLDER=PARENT_DIR="$(dirname "$SCRIPT_DIR")/logit.sh"
+    PRESENT_SCRIPT="$(dirname "$SCRIPT_DIR")/logit.sh"
 
-    # Local check
-    if [ -f "$LOCAL_FILE" ]; then
-        local_version=$(grep -oP '^LOGIT_VERSION="\K[0-9.]+' "$LOCAL_FILE")
-        printf "Logit - Local - Version: $local_version\n"
-        if [ "$local_version" != "$LATEST_VERSION" ]; then
-            local_update_available="true"
-        else 
-            local_update_available="false"
+    # Present check
+    if [[ -f "$PRESENT_SCRIPT" ]]; then
+        PRESENT_VERSION=$(grep -oP '^LOGIT_VERSION="\K[0-9.]+' "$PRESENT_SCRIPT")
+        printf "Current Logit Version: $PRESENT_VERSION\n"
+        if [[ $(echo -e "$LATEST_VERSION\n$PRESENT_VERSION" | sort -V | head -n1) == "$PRESENT_VERSION" ]]; then
+            if [[ "$LATEST_VERSION" != "$PRESENT_VERSION" ]]; then
+                # Update Available
+                printf "A newer version is available.\n"
+                logit INFO "A newer version is available. Current: $PRESENT_VERSION Latest: $LATEST_VERSION"
+                # Choices
+                printf "1) Update. \n"
+                printf "2) Cancel. \n\n"
+
+                # User choice input
+                read -p "$(echo -e "${BOLD_TEXT}Please enter your choice ${BLUE_TEXT}[1/2]${RESET_TEXT}: ")" update_choices
+                update_choice=$(echo "$update_choices" | tr '[:upper:]' '[:lower:]')
+                case $update_choice in
+                    1|update|yes|y)
+                        logit INFO "Attempting to download newer version"
+                        
+                        curl -L "$RELEASED_VER" -o "$(dirname "$SCRIPT_DIR")/update.zip"
+                        unzip -o update.zip
+                        chmod +x "$PRESENT_SCRIPT"
+                        PRESENT_VERSION=$(grep -oP '^LOGIT_VERSION="\K[0-9.]+' "$PRESENT_SCRIPT")
+
+                        if [ "$PRESENT_VERSION" != "$LATEST_VERSION" ]; then
+                            printf "\n${BOLD_TEXT}${RED_TEXT}ERROR${RESET_TEXT} - Failed to update Logit to version: $LATEST_VERSION\n"
+                            return 1
+                        else 
+                            printf "\n${BOLD_TEXT}${GREEN_TEXT}Success${RESET_TEXT} - Logit has been updated to version: $LATEST_VERSION\n\n"
+                            return 0
+                        fi
+                    ;;
+                    2|no|cancel|exit|n)
+                        printf "Updating Canceled, exiting.\n\n"
+                        return 0
+                    ;;
+                    *)
+                        printf "\n${RED_TEXT}${BOLD_TEXT}Invalid option.${RESET_TEXT}\n"
+                        return 1
+                        ;;
+                esac
+            else
+                # No Update Available
+                printf "${BOLD_TEXT}${GREEN_TEXT}You are using the latest Logit version.${RESET_TEXT}\n\n"
+                return
+            fi
         fi
-    else
-        local_installed="false"
     fi
-
-    # Present Folder
-    if [ -f "$PRESENT_FOLDER" ]; then
-        echo "TODODODODO" #TODO
-    fi
-
-     # Local update available
-    if [ "$local_update_available" == "true" ]; then
-        printf "\n${BOLD}Local Logit update available.${RESET}\n"
-        printf "Current version: $local_version\n"
-        printf "Latest version: $LATEST_VERSION\n\n"
-
-        # Choices - Local
-        printf "1) Update Local (Current user only). \n"
-        printf "2) Cancel. \n\n"
-
-        # User local choice input
-        read -p "$(echo -e "${BOLD_TEXT}Please enter your choice ${BLUE_TEXT}[1/2]${RESET_TEXT}: ")" local_choice
-
-        case $local_choice in
-            1)
-                curl -s "$VERSION_URL" -o "$LOCAL_FILE"
-                chmod +x "$LOCAL_FILE"
-                local_version=$(grep -oP '^LOGIT_VERSION="\K[0-9.]+' "$LOCAL_FILE")
-
-                if [ "$local_version" != "$LATEST_VERSION" ]; then
-                    printf "\n${BOLD_TEXT}${RED_TEXT}ERROR${RESET_TEXT} - Failed to update Logit - Local to version: $LATEST_VERSION\n"
-                else 
-                    printf "\n${BOLD_TEXT}${GREEN_TEXT}Success${RESET_TEXT} - Logit Local has been updated to version: $LATEST_VERSION\n\n"
-                    source "$LOCAL_FILE"
-                    return
-                fi
-            ;;
-            2)
-                printf "Updating Canceled, exiting.\n\n"
-                return 0
-            ;;
-            *)
-                printf "\n${RED_TEXT}${BOLD_TEXT}Invalid option.${RESET_TEXT}\n"
-                return 1
-                ;;
-        esac
-    fi
-
-    # Global update available
-    if [ "$global_update_available" == "true" ]; then
-        printf "\n${BOLD_TEXT}Global Logit update available.${RESET_TEXT}\n"
-        printf "Current version: $global_version\n"
-        printf "Latest version: $LATEST_VERSION\n\n"
-
-        # Choices - Global
-        printf "1) Update Logit Global. \n"
-        printf "2) Cancel. \n\n"
-
-        # User global choice input
-        read -p "$(echo -e "${BOLD_TEXT}Please enter your choice ${BLUE_TEXT}[1/2]${RESET_TEXT}: ")" global_choice
-
-        case $global_choice in
-            1)
-                sudo curl -s "$VERSION_URL" -o "$GLOBAL_FILE"
-                sudo chmod +x "$GLOBAL_FILE"
-                global_version=$(grep -oP '^LOGIT_VERSION="\K[0-9.]+' "$GLOBAL_FILE")
-
-                if [ "$global_version" != "$LATEST_VERSION" ]; then
-                    printf "\n${BOLD_TEXT}${RED_TEXT}ERROR${RESET_TEXT} - Failed to update Logit - Global to version: $LATEST_VERSION\n"
-                else 
-                    printf "\n${BOLD_TEXT}${GREEN_TEXT}Success${RESET_TEXT} - Logit Global has been updated to version: $LATEST_VERSION\n\n"
-                    source "$GLOBAL_FILE"
-                    return
-                fi
-            ;;
-            2)
-                printf "Updating Canceled, exiting.\n\n"
-                return
-            ;;
-            *)
-                printf "\n${RED_TEXT}${BOLD_TEXT}Invalid option.${RESET_TEXT}\n\n"
-                return
-            ;;
-        esac
-    fi
-
-    # No updates available
-    printf "${BOLD_TEXT}${GREEN_TEXT}No Logit updates available.${RESET_TEXT}\n\n"
-    return
 }
