@@ -52,7 +52,7 @@ To get help:
 logit help
 ```
 
-To update (not yet implemented):
+To update:
 
 ```bash
 logit update
@@ -68,23 +68,25 @@ logit uninstall
 
 ### ⚙️ **Configuration**
 
-- **Log Location**: By default, log entries are saved to the same folder your script ran from. You can override the log directory and file location by setting the `LOGDIR` and `LOGFILE` environment variables.
+- **Log Location / Name**: By default, log entries are saved to the same folder your script ran from with the name of the script which ran them. You can override the log directory, name and file location by setting the `LOG_NAME`, `LOGFILE` and `LOGFILE` environment variables.
 
     ```bash
-    export LOGDIR=/path/to/custom/logs
-    export LOGFILE=/path/to/custom/logfile.log
+    export LOG_NAME="mylog" #.log is added by default
+    export LOGFILE="/path/to/custom/"
+    export ERROR_LOG_FILE="/path/to/custom/"
     ```
 
 - **Timestamp Format**: You can customize the timestamp format used in log entries by setting the `LOGIT_DATE_FORMAT` variable:
 
     ```bash
-    export LOGIT_DATE_FORMAT="%Y-%m-%d %H:%M:%S"
+    export LOGIT_DATE_FORMAT="%Y-%m-%d %H:%M:%S.%3N"
     ```
 
-- **Silent Mode**: To suppress console output for non-error messages, set the `LOGIT_SILENT` variable:
+- **Silent Mode**: To suppress console output for non-error messages, set the `SHOW_MESSAGE` & `HIDE_INFO` variable:
 
     ```bash
-    export LOGIT_SILENT=true
+    export SHOW_MESSAGE="true" # Set "true" to also show logs to user (stdout) or anything else to disable (Will still show ERROR messages)
+    export HIDE_INFO="true" # Set "true" with SHOW_MESSAGE to hide INFO messages from stdout
     ```
 
 ---
@@ -110,4 +112,4 @@ This project is licensed under the [MIT License](https://opensource.org/licenses
 ### 📦 **Badges**
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)  
-[![Version](https://img.shields.io/badge/Version-0.0.2-blue.svg)](https://github.com/mendelsontal/devops_course/tree/logit-v0.0.2/bash/logit)
+[![Version](https://img.shields.io/badge/Version-0.1.0-blue.svg)](https://github.com/mendelsontal/devops_course/tree/logit-v0.1.0/bash/logit)

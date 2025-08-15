@@ -32,8 +32,8 @@ LOG_NAME="${LOG_NAME:-$(basename "$0" .sh)}"
 LOG_FILE="${LOG_FILE:-$PARENT_DIR/logs/${LOG_NAME}.log}"
 ERROR_LOG_FILE="${ERROR_LOG_FILE:-$PARENT_DIR/logs/errors_${LOG_NAME}.log}"
 MAX_LOG_FILES="${MAX_LOG_FILES:-3}" # keeping X archived log files.
-SHOW_MESSAGE="true" # Set "true" to also show logs to user (stdout) or anything else to disable
-HIDE_INFO="true" # Set "true" with SHOW_MESSAGE to hide INFO messages from stdout
+SHOW_MESSAGE="${SHOW_MESSAGE:-"true"}" # Set "true" to also show logs to user (stdout) or anything else to disable (Will still show ERROR messages)
+HIDE_INFO="${HIDE_INFO:-"true"}" # Set "true" with SHOW_MESSAGE to hide INFO messages from stdout
 # Allow customizable timestamp format
 LOGIT_DATE_FORMAT="${LOGIT_DATE_FORMAT:-"%Y-%m-%d %H:%M:%S.%3N"}"
 
@@ -78,6 +78,10 @@ logit() {
 
   # Lowercase the argument
     arg=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+    
+  # Capture additional arguments
+  shift
+  extra_args=("$@")
 
   case "$arg" in
       # Help
@@ -100,26 +104,33 @@ logit() {
       
       # Update
       update)
-        # URL where the latest version is stored
-        UPDATE_LOGIT
+        local confirm_flag=""
+        for arg in "${extra_args[@]}"; do
+          if [[ "$arg" == "-y" ]]; then
+            update_choice="-y"
+            break
+          fi
+        done
+        UPDATE_LOGIT "$update_choice"
         return
         ;;
   esac
 
-  local level="$1"
-  shift
-  local timestamp="[$(date +"$LOGIT_DATE_FORMAT" 2>/dev/null || echo 'unknown time')]"
+  if [[ ! $- =~ i ]]; then
+    local level="$1"
+    shift
+    local timestamp="[$(date +"$LOGIT_DATE_FORMAT" 2>/dev/null || echo 'unknown time')]"
 
-  case "$level" in
-    INFO|WARN|ERROR|SUCCESS)
-      # Valid log level — continue
-      ;;
-      *)
-      echo "Invalid log level: '$level'. Valid levels are: INFO, WARN, ERROR, SUCCESS" >&2
-      return 1
-      ;;
-  esac
-
+    case "$level" in
+      INFO|WARN|ERROR|SUCCESS)
+        # Valid log level — continue
+        ;;
+        *)
+        echo "Invalid log level: '$level'. Valid levels are: INFO, WARN, ERROR, SUCCESS" >&2
+        return 1
+        ;;
+    esac
+  fi
   # Capture message
   local message="$*"
   local log_dir

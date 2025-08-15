@@ -3,11 +3,12 @@
 # Logit Help function
 # ============================
 UPDATE_LOGIT(){
+    local update_choice="$1"
     # URL where the latest version is stored
     VERSION_URL="https://raw.githubusercontent.com/mendelsontal/logit/refs/heads/main/logit.sh"
-    
 
     # Fetch the latest version from the URL
+    printf "INFO - Checking for latest version..."
     LATEST_VERSION=$(curl -s "$VERSION_URL" | grep -oP '^LOGIT_VERSION="\K[0-9.]+')
     RELEASED_VER="https://github.com/mendelsontal/logit/archive/refs/tags/v$LATEST_VERSION.zip"
 
@@ -33,30 +34,33 @@ UPDATE_LOGIT(){
             if [[ "$LATEST_VERSION" != "$PRESENT_VERSION" ]]; then
                 # Update Available
                 printf "\nA newer version is available.\n"
-                logit INFO "A newer version is available. Current: $PRESENT_VERSION Latest: $LATEST_VERSION"
-                # Choices
-                printf "1) Update \n"
-                printf "2) Cancel \n\n"
 
-                # User choice input
-                read -p "$(echo -e "${BOLD_TEXT}Please enter your choice ${BLUE_TEXT}[1/2]${RESET_TEXT}: ")" update_choices
-                update_choice=$(echo "$update_choices" | tr '[:upper:]' '[:lower:]')
+                if [[ "$update_choice" != "-y" ]]; then
+                    # Choices
+                    printf "1) Update \n"
+                    printf "2) Cancel \n\n"
+
+                    # User choice input
+                    read -p "$(echo -e "${BOLD_TEXT}Please enter your choice ${BLUE_TEXT}[1/2]${RESET_TEXT}: ")" update_choices
+                    update_choice=$(echo "$update_choices" | tr '[:upper:]' '[:lower:]')                
+                fi             
+                
                 case $update_choice in
-                    1|update|yes|y)
-                        logit INFO "Attempting to download newer version"
+                    1|update|yes|y|-y|-Y)
+                        printf "\nDownloading update files...\n"
                         # Download latest zip release
                         curl -Ls --fail "$RELEASED_VER" -o "$(dirname "$SCRIPT_DIR")/update.zip"
                         if [[ $? -eq 0 ]]; then
-                            logit SUCCESS "Newer version downloaded successfully: $(dirname "$SCRIPT_DIR")/update.zip"
+                            printf "SUCCESS - Newer version downloaded successfully: $(dirname "$SCRIPT_DIR")/update.zip \n"
                         # Zip actions & cleanup
-                            unzip -o update.zip &&  \
-                            mv logit-*/logit.sh . && \
-                            mv logit-*/assets/* ./assets/ && \
-                            rm -r logit-* && \
-                            rm update.zip
+                            unzip -o "$(dirname "$SCRIPT_DIR")/update.zip" -d "$(dirname "$SCRIPT_DIR")" && \
+                            mv "$(dirname "$SCRIPT_DIR")/logit-$LATEST_VERSION/logit.sh" "$(dirname "$SCRIPT_DIR")/logit.sh" && \
+                            mv $(dirname "$SCRIPT_DIR")/logit-$LATEST_VERSION/assets/* "$(dirname "$SCRIPT_DIR")/assets" && \
+                            rm -r "$(dirname "$SCRIPT_DIR")/logit-$LATEST_VERSION" && \
+                            rm -r "$(dirname "$SCRIPT_DIR")/update.zip"
                         else
                             echo $RESPONSE
-                            logit ERROR "Failed to download"
+                            printf "ERROR - Failed to download"
                         fi
 
                         chmod +x "$PRESENT_SCRIPT"
