@@ -31,9 +31,9 @@ LOGIT_HELP() {
     printf "\n"
     printf "${YELLOW_TEXT}Usage Examples:${RESET_TEXT}\n"
     printf "  export LOG_NAME=\"AwesomeScript\"\n"
-    printf "  export PARENT_DIR=\"\AwesomeScript\"\n"
-    printf "  export LOG_FILE=\"\home\AwesomeScript\Script.log\"\n"
-    printf "  export ERROR_LOG_FILE=\"\home\AwesomeScript\error.log\"\n"
+    printf "  export PARENT_DIR=\"/AwesomeScript\"\n"
+    printf "  export LOG_FILE=\"/home/AwesomeScript/Script.log\"\n"
+    printf "  export ERROR_LOG_FILE=\"/home/AwesomeScript/error.log\"\n"
     printf "\n"
     printf "  export LOG_SIZE=\"5\"\n"
     printf "  export MAX_LOG_FILES=\"10\"\n"
@@ -42,5 +42,5 @@ LOGIT_HELP() {
     printf "  export DEBUG_MODE=\"true\"\n"
     printf "  export LOGIT_DATE_FORMAT=\"%%d-%%m-%%Y %%H:%%M:%%S\"\n"
     printf "\n"
-    printf 'source \\path\\to\\logit.sh\n'
+    printf 'source /path/to/logit.sh\n'
 }

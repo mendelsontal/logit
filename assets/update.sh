@@ -21,8 +21,6 @@ UPDATE_LOGIT(){
     printf "\nLatest  Logit Version: $LATEST_VERSION\n"
 
     # Define paths properly
-    LOCAL_FILE="$HOME/bin/logit/logit.sh"
-    GLOBAL_FILE="/usr/local/bin/logit/logit.sh"
     SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
     PRESENT_SCRIPT="$(dirname "$SCRIPT_DIR")/logit.sh"
 
