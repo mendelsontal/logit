@@ -11,32 +11,38 @@
 #   logit WARN "This is a warning."
 #   logit ERROR "Something went wrong."
 #   logit SUCCESS "Task completed successfully."
+#   logit DEBUG "This is a debug messaage"
 #   logit help     # Show usage and environment variable info
 #
 # Environment Variables:
-#   LOG_NAME:       Name of the log file (default: TheScriptName)
-#   LOG_FILE:       Path to the log file (default: ./Logs/${LOG_NAME}.log)
-#   MAX_LOG_FILES:  Number of rotated log files to keep (default: 3)
-#   SHOW_MESSAGE:   Set to "true" to also show logs to user (stdout)
-#   HIDE_INFO:      Set to "true" with SHOW_MESSAGE to hide INFO messages from stdout
+#   LOG_NAME:           Name of the log file | (default: YourScriptName)
+#   LOG_FILE:           Path to the log file | (default: $PARENT_DIR/logs/${LOG_NAME}.log)
+#   ERROR_LOG_FILE:     Path to the error log file | (default: $PARENT_DIR/logs/errors_${LOG_NAME}.log)
+#   LOG_SIZE:           Maximum size of log file before rotating in MB | (default: 3)
+#   MAX_LOG_FILES:      Number of rotated log files to keep | (default: 3)
+#   SHOW_MESSAGE:       Set to "true" to also show logs to user (stdout) | (default: "true")
+#   HIDE_INFO:          Set to "true" with SHOW_MESSAGE to hide INFO messages from stdout | (default: "true")
+#   DEBUG_MODE:         Set to "true" to activate DEBUG mode which will log all commands without their output | (default: "false")
+#   LOGIT_DATE_FORMAT:  Allows customizable timestamp format (default: %Y-%m-%d %H:%M:%S.%3N)
 ############################################################ /ᐠ｡ꞈ｡ᐟ\ ############################################################
-#
-LOGIT_VERSION="0.1.0"
-SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
-#PARENT_DIR="$(dirname "$SCRIPT_DIR")"
-PARENT_DIR="${PARENT_DIR:-$(basename "$(dirname "$0")")}"
 
-MAX_SIZE=$((3 * 1024 * 1024)) # Maximum allowed log file size in bytes (3 MB)
-# Default log name and location
-LOG_NAME="${LOG_NAME:-$(basename "$0" .sh)}"
+# ============================
+# Logit Version
+# ============================
+LOGIT_VERSION="0.1.1"
+# ============================
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")" # Gets the script dir
+PARENT_DIR="${PARENT_DIR:-$(basename "$(dirname "$0")")}"
+LOG_SIZE="${LOG_SIZE:-"3"}" # Maximum allowed log file size in MB (used in LOG_SIZE)
+MAX_SIZE=$(($LOG_SIZE * 1024 * 1024)) # Maximum allowed log file size in bytes, uses LOG_SIZE variable.
+LOG_NAME="${LOG_NAME:-$(basename "$0" .sh)}" # Gets the script name
 LOG_FILE="${LOG_FILE:-$PARENT_DIR/logs/${LOG_NAME}.log}"
 ERROR_LOG_FILE="${ERROR_LOG_FILE:-$PARENT_DIR/logs/errors_${LOG_NAME}.log}"
 MAX_LOG_FILES="${MAX_LOG_FILES:-3}" # keeping X archived log files.
 SHOW_MESSAGE="${SHOW_MESSAGE:-"true"}" # Set "true" to also show logs to user (stdout) or anything else to disable (Will still show ERROR messages)
 HIDE_INFO="${HIDE_INFO:-"true"}" # Set "true" with SHOW_MESSAGE to hide INFO messages from stdout
-# Allow customizable timestamp format
-LOGIT_DATE_FORMAT="${LOGIT_DATE_FORMAT:-"%Y-%m-%d %H:%M:%S.%3N"}"
-DEBUG_MODE="${DEBUG_MODE:-"true"}" # Set "true" to activate DEBUG mode.
+DEBUG_MODE="${DEBUG_MODE:-"false"}" # Set "true" to activate DEBUG mode
+LOGIT_DATE_FORMAT="${LOGIT_DATE_FORMAT:-"%Y-%m-%d %H:%M:%S.%3N"}" # Allow customizable timestamp format
 
 # ============================
 # Load all external scripts from functions folder
@@ -46,6 +52,11 @@ for f in $SCRIPT_DIR/assets/*.sh; do
     source "$f"
 done
 shopt -u nullglob
+
+# ============================
+# Debug mode setup: Log every command when DEBUG_MODE is true
+# ============================
+trap '[[ "$DEBUG_MODE" == "true" ]] && logit DEBUG "Executing command: $BASH_COMMAND"' DEBUG
 
 # Check if shell is interactive
 if [[ $- == *i* ]]; then
@@ -75,12 +86,6 @@ logit() {
   if [ $# -lt 1 ]; then
       printf "\n${BOLD_TEXT}Usage: $0 {help | version | update}${RESET_TEXT}\n"
       return 
-  fi
-
-  # Enable command logging if 'start' is given
-  if [[ "$DEBUG_MODE" == "true" ]]; then
-      trap 'logit DEBUG "Running command: $BASH_COMMAND"' DEBUG
-      return
   fi
 
   # Lowercase the argument
@@ -117,7 +122,7 @@ logit() {
         return
         ;;
   esac
-
+  
     #shift
     local timestamp="[$(date +"$LOGIT_DATE_FORMAT" 2>/dev/null || echo 'unknown time')]"
 
@@ -143,14 +148,19 @@ logit() {
     return 1
   fi
 
-  # Ensure log directory exists and is writable, or fallback to /tmp
-if [[ ! -d "$log_dir" ]]; then
-  if ! mkdir -p "$log_dir" 2>/dev/null || [[ ! -w "$log_dir" ]]; then
-    echo "Warning: Falling back to /tmp for log file" >&2
-    LOG_FILE="/tmp/${LOG_NAME}.log"
-    log_dir="/tmp"
+  # Skip DEBUG messages unless DEBUG_MODE is true (for explicit logit DEBUG calls)
+  if [[ "$level" == "DEBUG" && "$DEBUG_MODE" != "true" ]]; then
+    return 0
   fi
-fi
+
+    # Ensure log directory exists and is writable, or fallback to /tmp
+  if [[ ! -d "$log_dir" ]]; then
+    if ! mkdir -p "$log_dir" 2>/dev/null || [[ ! -w "$log_dir" ]]; then
+      echo "Warning: Falling back to /tmp for log file" >&2
+      LOG_FILE="/tmp/${LOG_NAME}.log"
+      log_dir="/tmp"
+    fi
+  fi
 
   # Create the log file if needed
   touch "$LOG_FILE" 2>/dev/null || {
