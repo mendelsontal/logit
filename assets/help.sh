@@ -40,7 +40,7 @@ LOGIT_HELP() {
     printf "  export SHOW_MESSAGE=\"true\"\n"
     printf "  export HIDE_INFO=\"false\"\n"
     printf "  export DEBUG_MODE=\"true\"\n"
-    printf "  export LOGIT_DATE_FORMAT=\"%d-%m-%Y %H:%M:%S\"\n"
+    printf "  export LOGIT_DATE_FORMAT=\"%%d-%%m-%%Y %%H:%%M:%%S\"\n"
     printf "\n"
-    printf "source \path\to\logit.sh\n"
+    printf 'source \\path\\to\\logit.sh\n'
 }

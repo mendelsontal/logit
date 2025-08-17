@@ -29,7 +29,7 @@
 # ============================
 # Logit Version
 # ============================
-LOGIT_VERSION="0.1.1"
+LOGIT_VERSION="0.1.11"
 # ============================
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")" # Gets the script dir
 PARENT_DIR="${PARENT_DIR:-$(basename "$(dirname "$0")")}"
