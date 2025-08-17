@@ -5,7 +5,7 @@
 UPDATE_LOGIT(){
     local update_choice="$1"
     # URL where the latest version is stored
-    VERSION_URL="https://raw.githubusercontent.com/mendelsontal/logit/refs/heads/main/logit.sh"
+    VERSION_URL="https://raw.githubusercontent.com/mendelsontal/logit/main/logit.sh"
 
     # Fetch the latest version from the URL
     printf "INFO - Checking for latest version..."
@@ -58,6 +58,7 @@ UPDATE_LOGIT(){
                             mv $(dirname "$SCRIPT_DIR")/logit-$LATEST_VERSION/assets/* "$(dirname "$SCRIPT_DIR")/assets" && \
                             rm -r "$(dirname "$SCRIPT_DIR")/logit-$LATEST_VERSION" && \
                             rm -r "$(dirname "$SCRIPT_DIR")/update.zip"
+                            source ~/.bashrc 2>/dev/null
                         else
                             echo $RESPONSE
                             printf "ERROR - Failed to download"

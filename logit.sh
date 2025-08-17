@@ -36,6 +36,7 @@ SHOW_MESSAGE="${SHOW_MESSAGE:-"true"}" # Set "true" to also show logs to user (s
 HIDE_INFO="${HIDE_INFO:-"true"}" # Set "true" with SHOW_MESSAGE to hide INFO messages from stdout
 # Allow customizable timestamp format
 LOGIT_DATE_FORMAT="${LOGIT_DATE_FORMAT:-"%Y-%m-%d %H:%M:%S.%3N"}"
+DEBUG_MODE="${DEBUG_MODE:-"true"}" # Set "true" to activate DEBUG mode.
 
 # ============================
 # Load all external scripts from functions folder
@@ -72,13 +73,20 @@ logit() {
   message_format
   # Check if at least one argument is provided
   if [ $# -lt 1 ]; then
-      printf "\n${BOLD_TEXT}Usage: $0 {help | version | update | uninstall}${RESET_TEXT}\n"
+      printf "\n${BOLD_TEXT}Usage: $0 {help | version | update}${RESET_TEXT}\n"
       return 
+  fi
+
+  # Enable command logging if 'start' is given
+  if [[ "$DEBUG_MODE" == "true" ]]; then
+      trap 'logit DEBUG "Running command: $BASH_COMMAND"' DEBUG
+      return
   fi
 
   # Lowercase the argument
     arg=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-    
+
+  local level="$1" 
   # Capture additional arguments
   shift
   extra_args=("$@")
@@ -95,42 +103,34 @@ logit() {
         printf "Installed Logit version: ${BOLD_TEXT}${GREEN_TEXT}$LOGIT_VERSION${RESET_TEXT}\n"
         return
         ;;
-
-      # Uninstall
-      uninstall)
-        #TODO
-        return
-        ;;
       
       # Update
       update)
         local confirm_flag=""
         for arg in "${extra_args[@]}"; do
           if [[ "$arg" == "-y" ]]; then
-            update_choice="-y"
+            confirm_flag="-y"
             break
           fi
         done
-        UPDATE_LOGIT "$update_choice"
+        UPDATE_LOGIT "$confirm_flag"
         return
         ;;
   esac
 
-  if [[ ! $- =~ i ]]; then
-    local level="$1"
-    shift
+    #shift
     local timestamp="[$(date +"$LOGIT_DATE_FORMAT" 2>/dev/null || echo 'unknown time')]"
 
     case "$level" in
-      INFO|WARN|ERROR|SUCCESS)
+      INFO|WARN|ERROR|SUCCESS|DEBUG)
         # Valid log level — continue
         ;;
         *)
-        echo "Invalid log level: '$level'. Valid levels are: INFO, WARN, ERROR, SUCCESS" >&2
+        echo "Invalid log level: '$level'. Valid levels are: INFO, WARN, ERROR, SUCCESS, DEBUG" >&2
         return 1
         ;;
     esac
-  fi
+
   # Capture message
   local message="$*"
   local log_dir
